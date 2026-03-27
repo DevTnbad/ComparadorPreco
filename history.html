@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico - Compara Preço</title>
+  <meta name="theme-color" content="#1f7a3d">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Consultas anteriores</p>
+        <h1>Histórico</h1>
+        <p class="subtitle">Busque comparações salvas por nome do produto.</p>
+      </div>
+      <div class="topbar-actions">
+        <a class="ghost-btn" href="index.html">Comparar</a>
+      </div>
+    </header>
+
+    <main class="history-layout">
+      <section class="panel history-toolbar">
+        <div class="toolbar-grid">
+          <label class="field">
+            <span>Buscar por produto</span>
+            <input id="searchInput" type="text" placeholder="Ex.: água, arroz, leite">
+          </label>
+          <div class="toolbar-buttons">
+            <button id="clearSearchBtn" class="ghost-btn" type="button">Limpar busca</button>
+            <button id="clearHistoryBtn" class="danger-btn" type="button">Apagar histórico</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="historyContainer" class="history-list"></section>
+
+      <section id="historyEmpty" class="panel empty-state hidden">
+        <div class="empty-icon">🕘</div>
+        <p>Nenhuma comparação encontrada.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="history.js"></script>
+</body>
+</html>
