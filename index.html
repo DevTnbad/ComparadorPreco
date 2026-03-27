@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
   <title>Compara Preço</title>
-  <meta name="theme-color" content="#1f7a3d">
-  <meta name="description" content="Compare preços por kilo ou litro e economize no mercado.">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css">
+
+  <meta name="theme-color" content="#1f7a3d" />
+  <meta
+    name="description"
+    content="Compare produtos por kilo ou litro e economize no mercado."
+  />
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -17,11 +23,16 @@
       <div>
         <p class="eyebrow">Economizar no mercado</p>
         <h1>Compara Preço</h1>
-        <p class="subtitle">Compare 2 ou mais produtos pelo custo por kilo ou litro.</p>
+        <p class="subtitle">
+          Compare 2 ou mais produtos pelo custo por kilo ou litro.
+        </p>
       </div>
+
       <div class="topbar-actions">
-        <a class="ghost-btn" href="history.html">Histórico</a>
-        <button id="installBtn" class="primary-btn hidden" type="button">Instalar app</button>
+        <a class="secondary-btn" href="history.html">Histórico</a>
+        <button id="installBtn" class="primary-btn hidden" type="button">
+          Instalar app
+        </button>
       </div>
     </header>
 
@@ -29,19 +40,33 @@
       <section class="panel form-panel">
         <div class="section-head">
           <h2>Comparação rápida</h2>
-          <p>Digite apenas números em preço e peso/volume.</p>
+          <p>
+            Digite apenas números em preço e peso/volume.
+          </p>
         </div>
 
         <div class="info-strip">
-          <span><strong>Preço:</strong> 5 = R$ 0,05 | 550 = R$ 5,50</span>
-          <span><strong>Peso/Volume:</strong> 350 em Litro = 0,350 Litro | 1500 em Kilo = 1,500 Kilo</span>
+          <div><strong>Preço:</strong> 5 = R$ 0,05 | 550 = R$ 5,50</div>
+          <div>
+            <strong>Peso/Volume:</strong> 350 em Litro = 0,350 Litro |
+            1500 em Kilo = 1,500 Kilo
+          </div>
+          <div>
+            <strong>Importante:</strong> todos os itens comparados devem usar a
+            mesma unidade: ou todos em <strong>Litro</strong>, ou todos em
+            <strong>Kilo</strong>.
+          </div>
         </div>
+
+        <div id="unitError" class="alert-box hidden" role="alert"></div>
 
         <form id="comparisonForm">
           <div id="itemsContainer" class="items-container"></div>
 
           <div class="form-actions">
-            <button id="addItemBtn" class="secondary-btn" type="button">+ Adicionar item</button>
+            <button id="addItemBtn" class="secondary-btn" type="button">
+              + Adicionar item
+            </button>
             <button class="primary-btn" type="submit">Comparar</button>
             <button id="clearBtn" class="ghost-btn" type="button">Limpar</button>
           </div>
@@ -53,10 +78,14 @@
           <h2>Resultado</h2>
           <p>Ranking do mais vantajoso para o mais caro.</p>
         </div>
+
         <div id="emptyState" class="empty-state">
-          <div class="empty-icon">💡</div>
-          <p>Preencha pelo menos 2 produtos e toque em <strong>Comparar</strong>.</p>
+          <div>
+            <div class="empty-icon">🛒</div>
+            <p>Preencha pelo menos 2 produtos e toque em Comparar.</p>
+          </div>
         </div>
+
         <div id="resultsContainer" class="results-list"></div>
       </section>
     </main>
@@ -66,18 +95,30 @@
     <article class="item-card">
       <div class="item-header">
         <h3 class="item-title">Produto</h3>
-        <button type="button" class="remove-btn" title="Remover item">×</button>
+        <button type="button" class="remove-btn" aria-label="Remover item">×</button>
       </div>
 
       <div class="field-grid">
-        <label class="field">
+        <label class="field full-row">
           <span>Produto</span>
-          <input class="product-name" type="text" maxlength="80" placeholder="Ex.: Água mineral" required>
+          <input
+            type="text"
+            class="product-name"
+            placeholder="Ex.: Arroz"
+            maxlength="100"
+          />
         </label>
 
         <label class="field">
           <span>Peso/Volume</span>
-          <input class="raw-amount only-digits" type="text" inputmode="numeric" placeholder="Ex.: 350" required>
+          <input
+            type="text"
+            class="raw-amount"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="Ex.: 500"
+            maxlength="10"
+          />
           <small class="hint preview-amount">0,000 Litro</small>
         </label>
 
@@ -91,13 +132,25 @@
 
         <label class="field">
           <span>Preço</span>
-          <input class="raw-price only-digits" type="text" inputmode="numeric" placeholder="Ex.: 550" required>
+          <input
+            type="text"
+            class="raw-price"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="Ex.: 550"
+            maxlength="12"
+          />
           <small class="hint preview-price">R$ 0,00</small>
         </label>
 
         <label class="field full-row">
-          <span>Estabelecimento <em>(opcional)</em></span>
-          <input class="store-name" type="text" maxlength="80" placeholder="Ex.: Mercado do bairro">
+          <span>Estabelecimento (opcional)</span>
+          <input
+            type="text"
+            class="store-name"
+            placeholder="Ex.: Mercado do Bairro"
+            maxlength="120"
+          />
         </label>
       </div>
     </article>

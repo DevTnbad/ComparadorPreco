@@ -1,4 +1,3 @@
-
 let deferredPrompt = null;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -10,28 +9,51 @@ document.addEventListener("DOMContentLoaded", () => {
   const emptyState = document.getElementById("emptyState");
   const resultsContainer = document.getElementById("resultsContainer");
   const installBtn = document.getElementById("installBtn");
+  const unitError = document.getElementById("unitError");
 
   addItem();
   addItem();
 
-  addItemBtn.addEventListener("click", () => addItem());
+  addItemBtn.addEventListener("click", () => {
+    clearUnitError();
+    addItem();
+  });
+
   clearBtn.addEventListener("click", () => {
     itemsContainer.innerHTML = "";
     addItem();
     addItem();
     resultsContainer.innerHTML = "";
     emptyState.classList.remove("hidden");
+    clearUnitError();
   });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
+    clearUnitError();
+
     const items = collectItems();
+
     if (items.length < 2) {
       alert("Adicione pelo menos 2 produtos válidos para comparar.");
       return;
     }
 
-    const processed = items.map(processItem).sort((a, b) => a.unitCost - b.unitCost);
+    const hasMixedUnits = validateSameUnit(items);
+
+    if (hasMixedUnits) {
+      resultsContainer.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      showUnitError(
+        "Todos os produtos da comparação precisam usar a mesma unidade: ou todos em Litro, ou todos em Kilo."
+      );
+      return;
+    }
+
+    const processed = items
+      .map(processItem)
+      .sort((a, b) => a.unitCost - b.unitCost);
+
     enrichSavings(processed);
     renderResults(processed);
     saveComparison(processed);
@@ -73,23 +95,30 @@ document.addEventListener("DOMContentLoaded", () => {
       pricePreview.textContent = formatCurrencyFromDigits(priceInput.value);
     };
 
-    [amountInput, priceInput].forEach(input => {
+    [amountInput, priceInput].forEach((input) => {
       input.addEventListener("input", () => {
         input.value = onlyDigits(input.value);
+        clearUnitError();
+
         if (input === amountInput) updateAmountPreview();
         if (input === priceInput) updatePricePreview();
       });
     });
 
-    unitSelect.addEventListener("change", updateAmountPreview);
+    unitSelect.addEventListener("change", () => {
+      clearUnitError();
+      updateAmountPreview();
+    });
 
     removeBtn.addEventListener("click", () => {
       if (itemsContainer.children.length <= 2) {
         alert("A comparação precisa de pelo menos 2 itens.");
         return;
       }
+
       card.remove();
       renumberItems();
+      clearUnitError();
     });
 
     itemsContainer.appendChild(fragment);
@@ -106,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function collectItems() {
     const cards = [...itemsContainer.querySelectorAll(".item-card")];
+
     return cards
       .map((card) => ({
         productName: card.querySelector(".product-name").value.trim(),
@@ -115,6 +145,21 @@ document.addEventListener("DOMContentLoaded", () => {
         storeName: card.querySelector(".store-name").value.trim()
       }))
       .filter((item) => item.productName && item.rawAmount && item.rawPrice);
+  }
+
+  function validateSameUnit(items) {
+    const uniqueUnits = [...new Set(items.map((item) => item.unit))];
+    return uniqueUnits.length > 1;
+  }
+
+  function showUnitError(message) {
+    unitError.textContent = message;
+    unitError.classList.remove("hidden");
+  }
+
+  function clearUnitError() {
+    unitError.textContent = "";
+    unitError.classList.add("hidden");
   }
 
   function processItem(item) {
@@ -136,11 +181,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function enrichSavings(items) {
     if (items.length < 2) return;
+
     const best = items[0];
     const second = items[1];
     const mostExpensive = items[items.length - 1];
 
     best.savingsMostExpensive = calculateSavings(best.unitCost, mostExpensive.unitCost);
+
     if (items.length === 2) {
       best.savingsSecond = null;
     } else {
@@ -155,36 +202,46 @@ document.addEventListener("DOMContentLoaded", () => {
     items.forEach((item, index) => {
       const card = document.createElement("article");
       card.className = "result-card";
+
       applyHeatColor(card, index, items.length);
 
       const costLabel = item.unit === "litro" ? "Custo por litro" : "Custo por kilo";
-      const winnerBadge = index === 0 ? '<span class="badge">Mais vantajoso</span>' : '';
-      const storeHtml = item.storeName ? `<div><strong>Estabelecimento:</strong> ${escapeHtml(item.storeName)}</div>` : "";
+      const winnerBadge =
+        index === 0 ? `<span class="badge">Mais vantajoso</span>` : "";
+      const storeHtml = item.storeName
+        ? `<div><strong>Estabelecimento:</strong> ${escapeHtml(item.storeName)}</div>`
+        : "";
 
       let savingsHtml = "";
       if (index === 0 && typeof item.savingsMostExpensive === "number") {
         if (typeof item.savingsSecond === "number") {
-          savingsHtml += `<div>Economia vs 2º lugar: ${formatPercent(item.savingsSecond)}</div>`;
+          savingsHtml += `
+            <div>Economia vs 2º lugar: ${formatPercent(item.savingsSecond)}</div>
+          `;
         }
-        savingsHtml += `<div>Economia vs mais caro: ${formatPercent(item.savingsMostExpensive)}</div>`;
+
+        savingsHtml += `
+          <div>Economia vs mais caro: ${formatPercent(item.savingsMostExpensive)}</div>
+        `;
       }
 
       card.innerHTML = `
+        ${winnerBadge}
         <div class="result-top">
-          <div>
-            ${winnerBadge}
-            <h3>${escapeHtml(item.productName)}</h3>
-          </div>
-          <div class="rank-pill">${index + 1}º lugar</div>
+          <h3>${escapeHtml(item.productName)}</h3>
+          <span class="rank-pill">${index + 1}º lugar</span>
         </div>
+
         <div class="meta-list">
           <div><strong>Peso/Volume:</strong> ${item.displayAmount}</div>
           <div><strong>Preço:</strong> ${item.displayPrice}</div>
           ${storeHtml}
           <div><strong>${costLabel}:</strong> ${formatCurrency(item.unitCost)}/${item.unitShort}</div>
         </div>
+
         ${savingsHtml ? `<div class="savings">${savingsHtml}</div>` : ""}
       `;
+
       resultsContainer.appendChild(card);
     });
 
@@ -200,6 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
       createdAt: new Date().toISOString(),
       items
     };
+
     addComparisonToHistory(record);
   }
 });
@@ -215,14 +273,21 @@ function formatCurrencyFromDigits(raw) {
 }
 
 function formatCurrency(value) {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 }
 
 function formatAmountPreview(rawAmount, unit) {
   const digits = onlyDigits(rawAmount);
   const value = digits ? Number(digits) / 1000 : 0;
   const label = unit === "litro" ? "Litro" : "Kilo";
-  return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} ${label}`;
+
+  return `${value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  })} ${label}`;
 }
 
 function calculateSavings(bestCost, otherCost) {
@@ -230,41 +295,34 @@ function calculateSavings(bestCost, otherCost) {
 }
 
 function formatPercent(value) {
-  return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  return `${value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}%`;
 }
 
 function applyHeatColor(card, index, total) {
   const ratio = total <= 1 ? 0 : index / (total - 1);
+
   let bg = "#effaf1";
   let border = "#90c99f";
-  let pill = "#dff4e4";
 
   if (ratio === 0) {
     bg = "#effaf1";
     border = "#8fcb9e";
-    pill = "#d5f0dc";
   } else if (ratio < 0.34) {
     bg = "#f7f9e8";
     border = "#d8dc8f";
-    pill = "#f0f3cb";
   } else if (ratio < 0.67) {
     bg = "#fff7e7";
     border = "#f0ca7b";
-    pill = "#fde7b6";
   } else {
     bg = "#fff0f0";
     border = "#e3aaaa";
-    pill = "#f7d0d0";
   }
 
   card.style.background = bg;
   card.style.borderColor = border;
-  const pillEl = document.createElement("style");
-  pillEl.textContent = "";
-  setTimeout(() => {
-    const rank = card.querySelector(".rank-pill");
-    if (rank) rank.style.background = pill;
-  });
 }
 
 function escapeHtml(text) {
