@@ -47,52 +47,8 @@ O histórico permite:
 - buscar pelo nome do produto
 - apagar todo o histórico do aparelho
 
-## Importante
-Esta é a **versão simples**, sem servidor e sem computador.
-
-Tudo funciona:
-- direto no celular
-- offline depois de instalado e carregado
-- sem Flask
-- sem SQLite
-
-## Estrutura das pastas
-```bash
-comparador_preco_pwa_local/
-├── index.html
-├── history.html
-├── style.css
-├── app.js
-├── history.js
-├── storage.js
-├── manifest.json
-├── service-worker.js
-├── README.md
-└── icons/
-    ├── icon-192.png
-    └── icon-512.png
-```
-
-## Como testar
-Você pode abrir `index.html` no navegador, mas para instalação como PWA o ideal é servir os arquivos com um servidor estático simples.
-
-Exemplo com Python:
-```bash
-python -m http.server 8000
-```
-
-Depois abra no navegador:
-```text
-http://127.0.0.1:8000
-```
-
-No celular, acesse pelo IP do computador na mesma rede:
-```text
-http://SEU_IP:8000
-```
-
 ## Como instalar no Android
-1. Abra o projeto no Chrome
+1. Abra o projeto no Chrome https://devtnbad.github.io/ComparadorPreco/
 2. Toque no menu do navegador
 3. Escolha **Adicionar à tela inicial** ou **Instalar app**
 4. Confirme
