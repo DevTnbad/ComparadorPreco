@@ -1,4 +1,5 @@
 let deferredPrompt = null;
+let refreshing = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   const itemsContainer = document.getElementById("itemsContainer");
@@ -85,10 +86,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const removeBtn = fragment.querySelector(".remove-btn");
 
     card.dataset.index = String(itemsContainer.children.length + 1);
-    fragment.querySelector(".item-title").textContent = `Item ${itemsContainer.children.length + 1}`;
+    fragment.querySelector(".item-title").textContent = `Item ${
+      itemsContainer.children.length + 1
+    }`;
 
     const updateAmountPreview = () => {
-      amountPreview.textContent = formatAmountPreview(amountInput.value, unitSelect.value);
+      amountPreview.textContent = formatAmountPreview(
+        amountInput.value,
+        unitSelect.value
+      );
     };
 
     const updatePricePreview = () => {
@@ -186,7 +192,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const second = items[1];
     const mostExpensive = items[items.length - 1];
 
-    best.savingsMostExpensive = calculateSavings(best.unitCost, mostExpensive.unitCost);
+    best.savingsMostExpensive = calculateSavings(
+      best.unitCost,
+      mostExpensive.unitCost
+    );
 
     if (items.length === 2) {
       best.savingsSecond = null;
@@ -205,11 +214,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
       applyHeatColor(card, index, items.length);
 
-      const costLabel = item.unit === "litro" ? "Custo por litro" : "Custo por kilo";
+      const costLabel =
+        item.unit === "litro" ? "Custo por litro" : "Custo por kilo";
+
       const winnerBadge =
         index === 0 ? `<span class="badge">Mais vantajoso</span>` : "";
+
       const storeHtml = item.storeName
-        ? `<div><strong>Estabelecimento:</strong> ${escapeHtml(item.storeName)}</div>`
+        ? `<div><strong>Estabelecimento:</strong> ${escapeHtml(
+            item.storeName
+          )}</div>`
         : "";
 
       let savingsHtml = "";
@@ -221,7 +235,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         savingsHtml += `
-          <div>Economia vs mais caro: ${formatPercent(item.savingsMostExpensive)}</div>
+          <div>Economia vs mais caro: ${formatPercent(
+            item.savingsMostExpensive
+          )}</div>
         `;
       }
 
@@ -236,7 +252,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <div><strong>Peso/Volume:</strong> ${item.displayAmount}</div>
           <div><strong>Preço:</strong> ${item.displayPrice}</div>
           ${storeHtml}
-          <div><strong>${costLabel}:</strong> ${formatCurrency(item.unitCost)}/${item.unitShort}</div>
+          <div><strong>${costLabel}:</strong> ${formatCurrency(item.unitCost)}/${
+        item.unitShort
+      }</div>
         </div>
 
         ${savingsHtml ? `<div class="savings">${savingsHtml}</div>` : ""}
@@ -332,9 +350,39 @@ function escapeHtml(text) {
 }
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch((error) => {
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register(
+        "./service-worker.js"
+      );
+
+      registration.update();
+
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener("statechange", () => {
+          if (
+            newWorker.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            newWorker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      });
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    } catch (error) {
       console.error("Erro ao registrar service worker:", error);
-    });
+    }
   });
 }
