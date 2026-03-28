@@ -48,19 +48,26 @@
         <div class="info-strip">
           <div><strong>Preço:</strong> 5 = R$ 0,05 | 550 = R$ 5,50</div>
           <div>
-            <strong>Peso/Volume:</strong> 350 em Litro = 0,350 Litro |
-            1500 em Kilo = 1,500 Kilo
-          </div>
-          <div>
-            <strong>Importante:</strong> todos os itens comparados devem usar a
-            mesma unidade: ou todos em <strong>Litro</strong>, ou todos em
-            <strong>Kilo</strong>.
+            <strong>Peso/Volume:</strong> 350 em Volume = 0,350 Litro |
+            1500 em Peso = 1,500 Kilo
           </div>
         </div>
 
-        <div id="unitError" class="alert-box hidden" role="alert"></div>
-
         <form id="comparisonForm">
+          <div class="comparison-type-row">
+            <div class="comparison-type-label">Comparar por:</div>
+
+            <label class="type-option">
+              <input type="radio" name="comparisonType" value="kilo" checked />
+              <span>Peso (Kilo)</span>
+            </label>
+
+            <label class="type-option">
+              <input type="radio" name="comparisonType" value="litro" />
+              <span>Volume (Litro)</span>
+            </label>
+          </div>
+
           <div id="itemsContainer" class="items-container"></div>
 
           <div class="form-actions">
@@ -94,12 +101,12 @@
   <template id="itemTemplate">
     <article class="item-card">
       <div class="item-header">
-        <h3 class="item-title">Produto</h3>
+        <h3 class="item-title">Item</h3>
         <button type="button" class="remove-btn" aria-label="Remover item">×</button>
       </div>
 
-      <div class="field-grid">
-        <label class="field full-row">
+      <div class="field-grid compact-grid">
+        <label class="field product-field">
           <span>Produto</span>
           <input
             type="text"
@@ -109,7 +116,7 @@
           />
         </label>
 
-        <label class="field">
+        <label class="field amount-field">
           <span>Peso/Volume</span>
           <input
             type="text"
@@ -119,18 +126,10 @@
             placeholder="Ex.: 500"
             maxlength="10"
           />
-          <small class="hint preview-amount">0,000 Litro</small>
+          <small class="hint preview-amount">0,000 Kilo</small>
         </label>
 
-        <label class="field">
-          <span>Unidade</span>
-          <select class="unit-select">
-            <option value="litro">Litro</option>
-            <option value="kilo">Kilo</option>
-          </select>
-        </label>
-
-        <label class="field">
+        <label class="field price-field">
           <span>Preço</span>
           <input
             type="text"

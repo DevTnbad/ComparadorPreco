@@ -10,14 +10,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const emptyState = document.getElementById("emptyState");
   const resultsContainer = document.getElementById("resultsContainer");
   const installBtn = document.getElementById("installBtn");
-  const unitError = document.getElementById("unitError");
+  const comparisonTypeInputs = document.querySelectorAll('input[name="comparisonType"]');
 
   addItem();
   addItem();
 
   addItemBtn.addEventListener("click", () => {
-    clearUnitError();
     addItem();
+    updateAllAmountPreviews();
   });
 
   clearBtn.addEventListener("click", () => {
@@ -26,28 +26,21 @@ document.addEventListener("DOMContentLoaded", () => {
     addItem();
     resultsContainer.innerHTML = "";
     emptyState.classList.remove("hidden");
-    clearUnitError();
+  });
+
+  comparisonTypeInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      updateAllAmountPreviews();
+    });
   });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    clearUnitError();
 
     const items = collectItems();
 
     if (items.length < 2) {
       alert("Adicione pelo menos 2 produtos válidos para comparar.");
-      return;
-    }
-
-    const hasMixedUnits = validateSameUnit(items);
-
-    if (hasMixedUnits) {
-      resultsContainer.innerHTML = "";
-      emptyState.classList.remove("hidden");
-      showUnitError(
-        "Todos os produtos da comparação precisam usar a mesma unidade: ou todos em Litro, ou todos em Kilo."
-      );
       return;
     }
 
@@ -74,26 +67,27 @@ document.addEventListener("DOMContentLoaded", () => {
     installBtn.classList.add("hidden");
   });
 
+  function getSelectedComparisonType() {
+    const checked = document.querySelector('input[name="comparisonType"]:checked');
+    return checked ? checked.value : "kilo";
+  }
+
   function addItem() {
     const fragment = itemTemplate.content.cloneNode(true);
     const card = fragment.querySelector(".item-card");
     const productInput = fragment.querySelector(".product-name");
     const amountInput = fragment.querySelector(".raw-amount");
     const priceInput = fragment.querySelector(".raw-price");
-    const unitSelect = fragment.querySelector(".unit-select");
     const amountPreview = fragment.querySelector(".preview-amount");
     const pricePreview = fragment.querySelector(".preview-price");
     const removeBtn = fragment.querySelector(".remove-btn");
 
-    card.dataset.index = String(itemsContainer.children.length + 1);
-    fragment.querySelector(".item-title").textContent = `Item ${
-      itemsContainer.children.length + 1
-    }`;
+    fragment.querySelector(".item-title").textContent = `Item ${itemsContainer.children.length + 1}`;
 
     const updateAmountPreview = () => {
       amountPreview.textContent = formatAmountPreview(
         amountInput.value,
-        unitSelect.value
+        getSelectedComparisonType()
       );
     };
 
@@ -101,19 +95,14 @@ document.addEventListener("DOMContentLoaded", () => {
       pricePreview.textContent = formatCurrencyFromDigits(priceInput.value);
     };
 
-    [amountInput, priceInput].forEach((input) => {
-      input.addEventListener("input", () => {
-        input.value = onlyDigits(input.value);
-        clearUnitError();
-
-        if (input === amountInput) updateAmountPreview();
-        if (input === priceInput) updatePricePreview();
-      });
+    amountInput.addEventListener("input", () => {
+      amountInput.value = onlyDigits(amountInput.value);
+      updateAmountPreview();
     });
 
-    unitSelect.addEventListener("change", () => {
-      clearUnitError();
-      updateAmountPreview();
+    priceInput.addEventListener("input", () => {
+      priceInput.value = onlyDigits(priceInput.value);
+      updatePricePreview();
     });
 
     removeBtn.addEventListener("click", () => {
@@ -124,13 +113,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       card.remove();
       renumberItems();
-      clearUnitError();
     });
 
     itemsContainer.appendChild(fragment);
     updateAmountPreview();
     updatePricePreview();
     productInput.focus();
+  }
+
+  function updateAllAmountPreviews() {
+    const selectedType = getSelectedComparisonType();
+    const cards = [...itemsContainer.querySelectorAll(".item-card")];
+
+    cards.forEach((card) => {
+      const amountInput = card.querySelector(".raw-amount");
+      const amountPreview = card.querySelector(".preview-amount");
+      amountPreview.textContent = formatAmountPreview(amountInput.value, selectedType);
+    });
   }
 
   function renumberItems() {
@@ -140,32 +139,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function collectItems() {
+    const selectedType = getSelectedComparisonType();
     const cards = [...itemsContainer.querySelectorAll(".item-card")];
 
     return cards
       .map((card) => ({
         productName: card.querySelector(".product-name").value.trim(),
         rawAmount: onlyDigits(card.querySelector(".raw-amount").value),
-        unit: card.querySelector(".unit-select").value,
+        unit: selectedType,
         rawPrice: onlyDigits(card.querySelector(".raw-price").value),
         storeName: card.querySelector(".store-name").value.trim()
       }))
       .filter((item) => item.productName && item.rawAmount && item.rawPrice);
-  }
-
-  function validateSameUnit(items) {
-    const uniqueUnits = [...new Set(items.map((item) => item.unit))];
-    return uniqueUnits.length > 1;
-  }
-
-  function showUnitError(message) {
-    unitError.textContent = message;
-    unitError.classList.remove("hidden");
-  }
-
-  function clearUnitError() {
-    unitError.textContent = "";
-    unitError.classList.add("hidden");
   }
 
   function processItem(item) {
@@ -192,10 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const second = items[1];
     const mostExpensive = items[items.length - 1];
 
-    best.savingsMostExpensive = calculateSavings(
-      best.unitCost,
-      mostExpensive.unitCost
-    );
+    best.savingsMostExpensive = calculateSavings(best.unitCost, mostExpensive.unitCost);
 
     if (items.length === 2) {
       best.savingsSecond = null;
@@ -214,16 +196,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       applyHeatColor(card, index, items.length);
 
-      const costLabel =
-        item.unit === "litro" ? "Custo por litro" : "Custo por kilo";
-
+      const costLabel = item.unit === "litro" ? "Custo por litro" : "Custo por kilo";
       const winnerBadge =
         index === 0 ? `<span class="badge">Mais vantajoso</span>` : "";
-
       const storeHtml = item.storeName
-        ? `<div><strong>Estabelecimento:</strong> ${escapeHtml(
-            item.storeName
-          )}</div>`
+        ? `<div><strong>Estabelecimento:</strong> ${escapeHtml(item.storeName)}</div>`
         : "";
 
       let savingsHtml = "";
@@ -235,9 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         savingsHtml += `
-          <div>Economia vs mais caro: ${formatPercent(
-            item.savingsMostExpensive
-          )}</div>
+          <div>Economia vs mais caro: ${formatPercent(item.savingsMostExpensive)}</div>
         `;
       }
 
@@ -252,9 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div><strong>Peso/Volume:</strong> ${item.displayAmount}</div>
           <div><strong>Preço:</strong> ${item.displayPrice}</div>
           ${storeHtml}
-          <div><strong>${costLabel}:</strong> ${formatCurrency(item.unitCost)}/${
-        item.unitShort
-      }</div>
+          <div><strong>${costLabel}:</strong> ${formatCurrency(item.unitCost)}/${item.unitShort}</div>
         </div>
 
         ${savingsHtml ? `<div class="savings">${savingsHtml}</div>` : ""}
@@ -273,6 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const record = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       createdAt: new Date().toISOString(),
+      comparisonType: getSelectedComparisonType(),
       items
     };
 
@@ -324,23 +298,33 @@ function applyHeatColor(card, index, total) {
 
   let bg = "#effaf1";
   let border = "#90c99f";
+  let pill = "#dff4e4";
 
   if (ratio === 0) {
     bg = "#effaf1";
     border = "#8fcb9e";
+    pill = "#d5f0dc";
   } else if (ratio < 0.34) {
     bg = "#f7f9e8";
     border = "#d8dc8f";
+    pill = "#f0f3cb";
   } else if (ratio < 0.67) {
     bg = "#fff7e7";
     border = "#f0ca7b";
+    pill = "#fde7b6";
   } else {
     bg = "#fff0f0";
     border = "#e3aaaa";
+    pill = "#f7d0d0";
   }
 
   card.style.background = bg;
   card.style.borderColor = border;
+
+  setTimeout(() => {
+    const rank = card.querySelector(".rank-pill");
+    if (rank) rank.style.background = pill;
+  });
 }
 
 function escapeHtml(text) {
@@ -352,9 +336,7 @@ function escapeHtml(text) {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      const registration = await navigator.serviceWorker.register(
-        "./service-worker.js"
-      );
+      const registration = await navigator.serviceWorker.register("./service-worker.js");
 
       registration.update();
 
